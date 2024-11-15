@@ -34,11 +34,9 @@ let gameObjects = {
       legs(x, y, type) {
         stroke("#ffc500");
         strokeWeight(5);
-        // Base legs
         line(x + 10, y - 30, x + 10, y);
         line(x - 10, y - 30, x - 10, y);
 
-        // Leg endings based on type
         switch (type) {
           case "front":
             line(x + 10, y, x + 20, y);
@@ -84,9 +82,9 @@ let gameObjects = {
       stroke("#000000");
       strokeWeight(2);
       fill("#5e29b1");
-      rect(this.x - this.sizeX, this.y, this.sizeX * 2, this.sizeY * -2);
+      rect(x - this.sizeX, y, this.sizeX * 2, this.sizeY * -2);
       fill("#ffffff");
-      circle(this.x + (direction === "left" ? -this.sizeX : this.sizeX), this.y - this.sizeY, 10);
+      circle(x + (direction === "left" ? -this.sizeX : this.sizeX), y - this.sizeY, 10);
     }
   },
 
@@ -120,19 +118,17 @@ let gameObjects = {
       tree() {
         noStroke();
         fill(123, 63, 0);
-        quad(895, (this.y - this.h) - 90, 915, (this.y - this.h) - 90, 925, (this.y - this.h), 885, (this.y - this.h));
+        quad(895, this.y - this.h - 90, 915, this.y - this.h - 90, 925, this.y - this.h, 885, this.y - this.h);
         fill(0, 100, 0);
-        ellipse(905, (this.y - this.h) - 80, 50, 80);
+        ellipse(905, this.y - this.h - 80, 50, 80);
       },
-
-      canyon() {},
 
       apple() {
         noStroke();
         fill("#c42020");
-        circle(350, (this.y - this.h) - 25, 50);
+        circle(350, this.y - this.h - 25, 50);
         fill("#3b2713");
-        quad(350, (this.y - this.h) - 48, 360, (this.y - this.h) - 46, 363, (this.y - this.h) - 65, 355, (this.y - this.h) - 65);
+        quad(350, this.y - this.h - 48, 360, this.y - this.h - 46, 363, this.y - this.h - 65, 355, this.y - this.h - 65);
       }
     }
   }
@@ -141,17 +137,16 @@ let gameObjects = {
 function draw() {
   createCanvas(innerWidth, innerHeight);
   background(100, 155, 255);
+  const env = gameObjects.environment.render;
   if (gameObjects.stage == 0) {
-    const env = gameObjects.environment.render;
     env.cloud();
     env.mountain();
     env.tree();
-    env.canyon();
     env.apple();
     env.base();
     gameObjects.enemy.rand = Math.floor(Math.random() * (10 - 1)) + 1;
-    renderCharacter();
     renderEnemy();
+    renderCharacter();
     gravity();
     charControl();
     enemyMovement();
