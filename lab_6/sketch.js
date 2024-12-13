@@ -274,11 +274,11 @@ function checkCollision(rectA, rectB) {
 
 function deathFromEnemy() {
   if(checkCollision(character, enemy)){
-    if(character.y >= enemy.y - enemy.height && character.y <= enemy.y - enemy.height + (enemy.height / 5)){
+    if(character.y >= enemy.y - enemy.height && character.y <= enemy.y - enemy.height - 5){
       enemy.dead = true;
       console.log("enemy is dead");
     }
-    if(character.y > enemy.y - enemy.height + (enemy.height / 5) && character.y <= enemy.y){
+    if(character.y > enemy.y - enemy.height && character.y <= enemy.y){
       character.dead = true;
       console.log("character is dead");
     }
@@ -368,6 +368,7 @@ function draw() {
       
       if (enemy.dead) {
         enemy.y = enemy.y + 50;
+        enemy.dead = false;
       }
       break;
     case "deathScreen":
