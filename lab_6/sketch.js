@@ -278,7 +278,7 @@ function deathFromEnemy() {
       enemy.dead = true;
       console.log("enemy is dead");
     }
-    if(character.y > enemy.y - enemy.height + 1 && character.y <= enemy.y){
+    if(character.y > enemy.y - enemy.height + (enemy.height / 5) && character.y <= enemy.y){
       character.dead = true;
       console.log("character is dead");
     }
