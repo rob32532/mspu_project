@@ -13,6 +13,7 @@ let characterRunRight;
 let characterRunLeft;
 let characterJumpUpRight;
 let characterJumpUpLeft;
+let animationStart;
 let groundLevel = innerHeight - (innerHeight * 1) / 4;
 
 function preload() {
@@ -239,56 +240,77 @@ function setup() {
         groundLevel: groundLevel,
         direction: true,
         currentCanyon: 0,
+        visible: true,
         isRun: false,
         isGrounded: true,
         isJump: false,
         isDead: false,
+        isDeadCanyon: false,
+        isDeadEnemy: false,
 
         draw() {
             if (this.isDead) {
-                this.deathFallSpeed += this.gravity;
-                this.y += this.deathFallSpeed;
-                deathSound.play();
-                if (this.y >= innerHeight + 200) {
-                    deathSound.pause();
-                }
+                if (this.isDeadCanyon) {
+                    this.deathFallSpeed += this.gravity;
+                    this.y += this.deathFallSpeed;
+                    deathSound.play();
+                    if (this.y >= innerHeight + 200) {
+                        deathSound.pause();
+                    }
 
-                if (this.y < this.currentCanyon.y + groundLevel) {
-                    this.state = this.direction ? "fallRight" : "fallLeft";
+                    if (this.y < this.currentCanyon.y + groundLevel) {
+                        this.state = this.direction ? "fallRight" : "fallLeft";
+                    }
+                } else if (this.isDeadEnemy) {
+                    this.state = this.direction ? "deathRight" : "deathLeft";
+                    deathSound.play();
+                    let animationDuration = 1700;
+                    animationStart = millis();
+                    let elapsedTime = animationDuration - animationStart;
+                    if (elapsedTime <= 0) {
+                        this.visible = false;
+                        deathSound.pause();
+                    }
                 }
             }
-
-            switch (this.state) {
-                case "idleRight":
-                    image(characterIdleRight, this.x - this.width / 2, this.y - this.height);
-                    break;
-                case "idleLeft":
-                    image(characterIdleLeft, this.x - this.width / 2, this.y - this.height);
-                    break;
-                case "runRight":
-                    image(characterRunRight, this.x - this.width / 2, this.y - this.height);
-                    break;
-                case "runLeft":
-                    image(characterRunLeft, this.x - this.width / 2, this.y - this.height);
-                    break;
-                case "jumpRight":
-                    image(characterJumpUpRight, this.x - this.width / 2, this.y - this.height);
-                    break;
-                case "jumpLeft":
-                    image(characterJumpUpLeft, this.x - this.width / 2, this.y - this.height);
-                    break;
-                case "fallRight":
-                    image(characterFallRight, this.x - this.width / 2, this.y - this.height);
-                    break;
-                case "fallLeft":
-                    image(characterFallLeft, this.x - this.width / 2, this.y - this.height);
-                    break;
-                default:
-                    image(characterIdleRight, this.x - this.width / 2, this.y - this.height);
-                    break;
+            if (this.visible) {
+                switch (this.state) {
+                    case "idleRight":
+                        image(characterIdleRight, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "idleLeft":
+                        image(characterIdleLeft, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "runRight":
+                        image(characterRunRight, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "runLeft":
+                        image(characterRunLeft, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "jumpRight":
+                        image(characterJumpUpRight, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "jumpLeft":
+                        image(characterJumpUpLeft, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "fallRight":
+                        image(characterFallRight, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "fallLeft":
+                        image(characterFallLeft, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "deathRight":
+                        image(characterDeathRight, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    case "deathLeft":
+                        image(characterDeathLeft, this.x - this.width / 2, this.y - this.height);
+                        break;
+                    default:
+                        image(characterIdleRight, this.x - this.width / 2, this.y - this.height);
+                        break;
+                }
             }
         },
-
         control() {
             if (this.isDead) return;
 
@@ -338,6 +360,7 @@ function setup() {
                 if (this.x > canyonX && this.x + this.width < canyonX + canyon.width && this.y >= canyon.y) {
                     if (!this.isDead) {
                         this.isDead = true;
+                        this.isDeadCanyon = true;
                         this.currentCanyon = canyon;
                         this.deathFallSpeed = 0;
                     }
@@ -347,26 +370,29 @@ function setup() {
 
         checkCollision(rectA, rectB) {
             return (
-                rectA.x - rectA.width < rectB.x + rectB.width &&
-                rectA.x + rectA.width > rectB.x - rectB.width &&
+                rectA.x < rectB.x + rectB.width / 2 &&
+                rectA.x + rectA.width > rectB.x - rectB.width / 2 &&
                 rectA.y < rectB.y + rectB.height &&
                 rectA.y + rectA.height > rectB.y
             );
+            /*noFill();
+            rect(rectB.x - rectB.width / 2, rectB.y, rectB.width, -rectB.height);
+            rect(rectA.x, rectA.y, rectA.width, -rectA.height);*/
         },
 
         deathFromEnemy(e) {
             if (this.checkCollision(character, e)) {
-                if (this.y >= e.y - e.height + (e.height * 2) / 3 && this.y <= e.y) {
-                    this.isDead = true;
-                    deathSound.play();
-                } else {
+                if (this.y <= e.y - e.height + (e.height * 2) / 3 && this.y >= e.y - e.height) {
                     e.isDead = true;
+                } else if (this.y >= e.y - e.height + (e.height * 2) / 3 && this.y <= e.y) {
+                    this.isDead = true;
+                    this.isDeadEnemy = true;
                 }
             }
         }
     };
 
-    enemy = new Enemy(450, groundLevel, 800, 1050);
+    enemy = new Enemy(450, groundLevel, 400, 500);
 
     ground = new Ground(0, groundLevel, groundMiddleTile.width, groundMiddleTile.height, 8);
     canyon = new Canyon(ground.x + ground.numTiles * ground.tileSize, groundLevel, 100, groundMiddleTile.height);
