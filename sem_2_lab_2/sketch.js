@@ -281,13 +281,6 @@ function soundChange() {
         line(mnx + mnSizeX / 2, mny + 20, mnx + mnSizeX / 2, mny + mnSizeY - 20);
     }
 
-    if ((keyIsDown(77) && masterVolume > 0) || storedVolume == 0) {
-        storedVolume = masterVolume;
-        masterVolume = 0;
-    } else if (keyIsDown(77)) {
-        masterVolume = storedVolume;
-    }
-
     jumpSound.volume = masterVolume;
     deathSound.volume = masterVolume;
 
