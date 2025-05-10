@@ -1,10 +1,19 @@
 let background01;
 
-let settingsIco;
-let soundIco01;
-let soundIco02;
-let soundIco03;
-let soundIco04;
+let settingsIcoW;
+let settingsIcoB;
+let settingsMenuOpened = false;
+
+let soundIco01W;
+let soundIco02W;
+let soundIco03W;
+let soundIco04W;
+
+let soundIco01B;
+let soundIco02B;
+let soundIco03B;
+let soundIco04B;
+
 let soundMenuOpened = false;
 
 let pixelFont;
@@ -39,17 +48,24 @@ let characterJumpUpLeft;
 let mouseClick;
 let gameState = "game";
 let groundLevel = innerHeight - (innerHeight * 1) / 4;
-let gameStartSec;
-let animationStartSec;
+
+let gameStartTime = 0;
+const animationDuration = 720;
 
 function preload() {
     background01 = loadImage("./assets/Textures/background/background.png");
 
-    settingsIco = loadImage("./assets/UI/icons/settings.ico");
-    soundIco01 = loadImage("./assets/UI/icons/sound01.ico");
-    soundIco02 = loadImage("./assets/UI/icons/sound02.ico");
-    soundIco03 = loadImage("./assets/UI/icons/sound03.ico");
-    soundIco04 = loadImage("./assets/UI/icons/sound04.ico");
+    settingsIcoW = loadImage("./assets/UI/icons/settingsWhite.ico");
+    settingsIcoB = loadImage("./assets/UI/icons/settingsBlack.ico");
+
+    soundIco01W = loadImage("./assets/UI/icons/sound01W.ico");
+    soundIco02W = loadImage("./assets/UI/icons/sound02W.ico");
+    soundIco03W = loadImage("./assets/UI/icons/sound03W.ico");
+    soundIco04W = loadImage("./assets/UI/icons/sound04W.ico");
+    soundIco01B = loadImage("./assets/UI/icons/sound01B.ico");
+    soundIco02B = loadImage("./assets/UI/icons/sound02B.ico");
+    soundIco03B = loadImage("./assets/UI/icons/sound03B.ico");
+    soundIco04B = loadImage("./assets/UI/icons/sound04B.ico");
 
     pixelFont = loadFont("./assets/Fonts/PixelifySans-Regular.ttf");
 
@@ -233,12 +249,13 @@ class Enemy extends Movable {
         this.leftBorder = leftBorder;
         this.rightBorder = rightBorder;
         this.isDead = false;
+        this.isDeadTrue = false;
         this.state = "walkRight";
         this.direction = true;
     }
 
     update() {
-        //if (this.isDead) return;
+        if (this.isDeadTrue) return;
         super.update();
         push();
         translate(this.startPosX, 0);
@@ -292,7 +309,7 @@ class Enemy extends Movable {
     }
 }
 
-function soundChange() {
+function settings() {
     let x = 15;
     let y = 10;
     let mx = mouseX;
@@ -300,6 +317,34 @@ function soundChange() {
     let size = 30;
     let mnx = x - 5;
     let mny = y + size;
+    let mnSizeX = size + 10;
+    let mnSizeY = size * 5;
+
+    const isOverIcon = mx >= x && mx <= x + size && my >= y && my <= y + size;
+    const isOverMenu = settingsMenuOpened && mx >= mnx && mx <= mnx + mnSizeX && my >= mny && my <= mny + mnSizeY;
+
+    settingsMenuOpened = isOverIcon || isOverMenu || soundMenuOpened;
+
+    if (settingsMenuOpened) {
+        fill("#ffffff");
+        stroke(0);
+        strokeWeight(1);
+        rect(mnx, y - 5, mnSizeX, mnSizeY, 10);
+        image(settingsIcoB, x, y, size, size);
+        soundChange();
+    }
+
+    image(settingsMenuOpened ? settingsIcoB : settingsIcoW, x, y, size, size);
+}
+
+function soundChange() {
+    let x = 15;
+    let y = 45;
+    let mx = mouseX;
+    let my = mouseY;
+    let size = 30;
+    let mnx = x + 35;
+    let mny = y - 40;
     let mnSizeX = size + 10;
     let mnSizeY = size * 5;
     let dotX = mnx + mnSizeX / 2;
@@ -352,13 +397,13 @@ function soundChange() {
     deathSound.volume = masterVolume;
 
     if (masterVolume > 0.65) {
-        image(soundIco04, x, y, size, size);
+        image(soundIco04B, x, y, size, size);
     } else if (masterVolume > 0.35) {
-        image(soundIco03, x, y, size, size);
+        image(soundIco03B, x, y, size, size);
     } else if (masterVolume > 0) {
-        image(soundIco02, x, y, size, size);
+        image(soundIco02B, x, y, size, size);
     } else {
-        image(soundIco01, x, y, size, size);
+        image(soundIco01B, x, y, size, size);
     }
 }
 
@@ -509,8 +554,7 @@ function restart() {
         },
 
         checkCanyon(canyons) {
-            for (let i = 0; i < canyons.length; i++) {
-                const canyon = canyons[i];
+            for (let canyon of canyons) {
                 let canyonX = canyon.x + canyon.startPosX;
                 if (this.x > canyonX && this.x + this.width < canyonX + canyon.width && this.y >= canyon.y) {
                     if (!this.isDead) {
@@ -525,15 +569,59 @@ function restart() {
         },
 
         checkPlatform(platforms) {
-            for (let i = 0; i < platforms.length; i++) {
-                const platform = platforms[i];
-                let platformX = (platform.x + platform.startPosX);
-                if (this.x + this.width >= platformX && this.x <= platformX + (platform.width/2) && this.y <= platform.y) {
-                    this.groundLevel = platform.y;
-                    this.onPlatform  = true;
-                } else this.onPlatform = false;
-                if(keyIsDown(83) && this.onPlatform) this.onPlatform = false;
-                if (!this.onPlatform) this.groundLevel = groundLevel;
+            this.onPlatform = false;
+            for (let platform of platforms) {
+                const platformX = platform.x + platform.startPosX;
+                const platformWidth = platform.width * 0.5;
+                const platformRight = platformX + platformWidth;
+
+                const betweenX = this.x + this.width >= platformX && this.x <= platformRight;
+
+                if (betweenX) {
+                    if (this.y <= platform.y && this.y + this.fallSpeed >= platform.y) {
+                        this.groundLevel = platform.y;
+                        this.onPlatform = true;
+                        this.y = platform.y;
+                        this.fallSpeed = 0;
+                        this.isGrounded = true;
+                        this.isJump = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!this.onPlatform) {
+                this.groundLevel = groundLevel;
+            }
+
+            if (keyIsDown(83) && this.onPlatform) {
+                this.onPlatform = false;
+                this.isGrounded = false;
+                this.groundLevel = groundLevel;
+            }
+        },
+
+        checkGround(grounds) {
+            this.onGround = false;
+            if (this.onPlatform) return;
+
+            for (let ground of grounds) {
+                const groundWorldX = ground.x + ground.startPosX;
+                const groundLeft = groundWorldX;
+                const groundRight = groundWorldX + ground.width;
+
+                const betweenX = this.x >= groundLeft && this.x <= groundRight;
+                const betweenY = this.y >= ground.y && this.y <= ground.y + ground.height;
+
+                if (betweenX && this.y >= ground.y) {
+                    this.onGround = true;
+                    this.groundLevel = ground.y;
+                    break;
+                }
+            }
+
+            if (!this.onGround) {
+                this.groundLevel = Infinity;
             }
         },
 
@@ -576,6 +664,7 @@ function restart() {
                 } else {
                     e.isDead = true;
                     e.state = e.direction ? "deathRight" : "deathLeft";
+                    e.isDeadTrue = true;
                 }
             }
         }
@@ -590,9 +679,7 @@ function restart() {
     ground2 = new Ground(canyon1.x + canyon1.width, groundLevel, groundMiddleTile.width, groundMiddleTile.height, 2);
 
     platform = new Platform(300, groundLevel - 100, platformMiddleTile.width, platformMiddleTile.height, 4);
-    platform1 = new Platform(300, 700, platformMiddleTile.width, platformMiddleTile.height, 4);
-    platform2 = new Platform(300, 700, platformMiddleTile.width, platformMiddleTile.height, 4);
-    platform3 = new Platform(300, 700, platformMiddleTile.width, platformMiddleTile.height, 4);
+    platform1 = new Platform(500, groundLevel - 200, platformMiddleTile.width, platformMiddleTile.height, 2);
 }
 
 function setup() {
@@ -609,6 +696,7 @@ function gameScreen() {
     canyon1.update();
 
     platform.update();
+    platform1.update();
 
     enemy.update();
 
@@ -616,7 +704,8 @@ function gameScreen() {
         character.checkCanyon([canyon, canyon1]);
     }
 
-    character.checkPlatform([platform]);
+    character.checkPlatform([platform, platform1]);
+    character.checkGround([ground, ground1, ground2]);
     character.draw();
     character.control();
     character.deathFromEnemy(enemy);
@@ -671,19 +760,12 @@ function help() {
     text("enemy: " + enemy.x + ", " + enemy.y, 100, 60);
     text("leftBorder: " + enemy.leftBorder + ", rightBorder" + enemy.rightBorder, 100, 80);
     text("volume: " + masterVolume, 100, 100);
-    text(`Running time: ${nf(gameStartSec, 1, 1)} sec`, 5, 50, 90);
-    text(`Running time: ${nf(animationStartSec, 1, 1)} sec`, 5, 150, 150);
     text("Character ground level: " + character.groundLevel, 100, 300);
     text("Platform X Y: " + platform.x + " " + platform.y, 100, 400);
 }
 
 function draw() {
     image(background01, 0, 0, innerWidth, innerHeight);
-    gameStartSec = millis() / 1000;
-
-    if (character.isDeadEnemy) {
-        animationStartSec = millis() / 1000;
-    }
 
     switch (gameState) {
         case "game":
@@ -697,5 +779,6 @@ function draw() {
 
     help();
 
-    soundChange();
+    //soundChange();
+    settings();
 }
