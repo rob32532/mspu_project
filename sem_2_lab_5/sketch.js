@@ -781,7 +781,7 @@ function restart() {
         }
     };
 
-    //enemy = new Enemy(450, groundLevel, 400, 650);
+    enemy = new Enemy(450, groundLevel, 400, 650);
     //enemy1 = new Enemy(750, groundLevel, 700, 800);
 
     ground = new Ground(0, groundLevel, groundMiddleTile.width, groundMiddleTile.height, 8);
@@ -791,7 +791,7 @@ function restart() {
     ground2 = new Ground(canyon1.x + canyon1.width, groundLevel, groundMiddleTile.width, groundMiddleTile.height, 2);
 
     platform = new Platform(150, groundLevel - 100, platformMiddleTile.width, platformMiddleTile.height, 4);
-    //platform1 = new Platform(500, groundLevel - 200, platformMiddleTile.width, platformMiddleTile.height, 2);
+    platform1 = new Platform(500, groundLevel - 200, platformMiddleTile.width, platformMiddleTile.height, 2);
 }
 
 function setup() {
@@ -811,20 +811,20 @@ function gameScreen() {
     canyon1.update();
 
     platform.update();
-    //platform1.update();
+    platform1.update();
 
-    //enemy.update();
+    enemy.update();
     //enemy1.update();
 
     if (!character.isDead) {
         character.checkCanyon([canyon, canyon1]);
     }
 
-    character.checkPlatform([platform]);
+    character.checkPlatform([platform, platform1]);
     character.checkGround([ground, ground1, ground2]);
     character.draw();
     character.control();
-    character.deathFromEnemy([/*enemy, enemy1*/]);
+    character.deathFromEnemy([enemy, /*enemy1*/]);
 }
 
 function deathScreen() {
