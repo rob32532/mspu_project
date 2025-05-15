@@ -12,6 +12,8 @@ let helpIsOpened;
 //let soundIco03W;
 //let soundIco04W;
 
+let eventPointer;
+
 let soundIco01B;
 let soundIco02B;
 let soundIco03B;
@@ -25,6 +27,8 @@ let masterVolume = 0.5;
 let storedVolume = 0.5;
 let isDragging = false;
 let storedDotY = 0;
+
+let isDeathScreen = false;
 
 let jumpSound;
 let deathSound;
@@ -81,10 +85,12 @@ function preload() {
     soundIco04B = loadImage("./assets/UI/icons/sound04B.ico");
 
     pixelFont = loadFont("./assets/Fonts/PixelifySans-Regular.ttf");
-    
-    runningTutorial = loadImage("./assets/Tutorials/runningTutorial.gif");
+
+    //runningTutorial = loadImage("./assets/Tutorials/runningTutorial.gif");
     jumpTutorial = loadImage("./assets/Tutorials/jumpTutorial.gif");
-    platformFallTutorial = loadImage("./assets/Tutorials/platformFallTutorial.gif");
+    //platformFallTutorial = loadImage("./assets/Tutorials/platformFallTutorial.gif");
+
+    eventPointer = loadImage("./assets/Textures/miscellaneous/event_pointer.png");
 
     flowersProps = loadImage("./assets/Textures/miscellaneous/flowers_props.png");
     grassProps = loadImage("./assets/Textures/miscellaneous/grass_props.png");
@@ -155,8 +161,75 @@ class Movable {
 }
 
 class Tutorial extends Movable {
-    costructor() {
-        
+    constructor(x, y, type) {
+        super();
+        this.x = x;
+        this.y = y;
+        this.type = type;
+        this.canPlay = false;
+        this.width = eventPointer.width / 2;
+        this.height = eventPointer.height / 2;
+        this.animation = null;
+        this.text = null;
+        switch (type) {
+            case 1:
+                this.animation = runningTutorial;
+                this.text = "RUN A/D";
+                break;
+            case 2:
+                this.animation = jumpTutorial;
+                this.text = "JUMP W";
+                break;
+            case 3:
+                this.animation = platformFallTutorial;
+                break;
+            default:
+                this.animation = runningTutorial;
+        }
+        this.animationWidth = this.animation.width / 8;
+        this.animationHeight = this.animation.height / 8;
+    }
+
+    update() {
+        super.update();
+        if (this.x + this.startPosX + this.width <= -170 || this.x + this.startPosX >= width) return;
+        this.checkTrigger();
+        this.display();
+    }
+
+    checkTrigger() {
+        if (
+            !this.canPlay &&
+            character.x + character.width / 2 >= this.startPosX + this.x &&
+            character.x <= this.startPosX + this.x + this.width
+        ) {
+            this.canPlay = true;
+        }
+    }
+
+    display() {
+        push();
+        translate(this.startPosX + this.x, this.y - this.height + 2);
+
+        const winX = this.width;
+        const winY = -this.animationHeight * 2;
+        const winWidth = this.animationWidth + 10;
+        const winHeight = this.animationHeight + 40;
+
+        image(eventPointer, 0, 0, this.width, this.height);
+
+        if (this.canPlay) {
+            fill("#bf704d");
+            rect(winX, winY, winWidth, winHeight, 10);
+
+            image(this.animation, winX + 5, winY + 10, this.animationWidth, this.animationHeight);
+
+            fill("black");
+            textSize(20);
+            textAlign(CENTER, CENTER);
+            text(this.text, (winX + winWidth) / 2, winY + winHeight - 20);
+        }
+        pop();
     }
 }
 
@@ -178,8 +251,9 @@ class Ground extends Movable {
     }
 
     update() {
-        this.display();
         super.update();
+        if (this.x + this.startPosX + this.width <= -(this.x + this.startPosX + this.width)) return;
+        this.display();
     }
 
     display() {
@@ -680,12 +754,13 @@ function restart() {
             for (let platform of platforms) {
                 const platformX = platform.x + platform.startPosX;
                 const platformWidth = platform.width * 0.5;
+                const platformHeight = platform.height * 0.5;
                 const platformRight = platformX + platformWidth;
 
                 const betweenX = this.x + this.width >= platformX && this.x <= platformRight;
 
                 if (betweenX) {
-                    if (this.y <= platform.y && this.y + this.fallSpeed >= platform.y) {
+                    if (this.y <= platform.y /*+ platformHeight*/ && this.y + this.fallSpeed >= platform.y) {
                         this.groundLevel = platform.y;
                         this.onPlatform = true;
                         this.y = platform.y;
@@ -719,7 +794,7 @@ function restart() {
                 const groundLeft = groundWorldX;
                 const groundRight = groundWorldX + ground.width;
 
-                const betweenX = this.x >= groundLeft && this.x <= groundRight;
+                const betweenX = this.x <= groundRight && this.x + this.width >= groundLeft;
                 const betweenY = this.y >= ground.y && this.y <= ground.y + ground.height;
 
                 if (betweenX && this.y >= ground.y) {
@@ -792,6 +867,8 @@ function restart() {
 
     platform = new Platform(150, groundLevel - 100, platformMiddleTile.width, platformMiddleTile.height, 4);
     platform1 = new Platform(500, groundLevel - 200, platformMiddleTile.width, platformMiddleTile.height, 2);
+
+    tutorial = new Tutorial(canyon.x - 150, groundLevel, 2);
 }
 
 function setup() {
@@ -813,6 +890,8 @@ function gameScreen() {
     platform.update();
     platform1.update();
 
+    tutorial.update();
+
     enemy.update();
     //enemy1.update();
 
@@ -824,10 +903,11 @@ function gameScreen() {
     character.checkGround([ground, ground1, ground2]);
     character.draw();
     character.control();
-    character.deathFromEnemy([enemy, /*enemy1*/]);
+    character.deathFromEnemy([enemy /*enemy1*/]);
 }
 
 function deathScreen() {
+    isDeathScreen = true;
     noStroke();
     fill(0, 0, 0, 100);
     rect(0, 0, width, height);
@@ -857,7 +937,7 @@ function mousePressed() {
             mouseX <= innerWidth / 2 + 130 &&
             mouseY >= innerHeight / 2 + 80 &&
             mouseY <= innerHeight / 2 + 140 &&
-            character.isDead) ||
+            isDeathScreen) ||
         (settingsMenuOpened && mouseX >= 15 && mouseX <= 45 && mouseY >= 80 && mouseY <= 110)
     ) {
         gameState = "game";
@@ -880,12 +960,11 @@ function mouseOver() {
         mouseX <= innerWidth / 2 + 130 &&
         mouseY >= innerHeight / 2 + 80 &&
         mouseY <= innerHeight / 2 + 140 &&
-        character.isDead;
+        isDeathScreen;
 
     const soundButton = settingsMenuOpened && mouseX >= 15 && mouseX <= 45 && mouseY >= 45 && mouseY <= 75;
 
     const restartButton = settingsMenuOpened && mouseX >= 15 && mouseX <= 45 && mouseY >= 80 && mouseY <= 110;
-
 
     if (settingButton || deadRestartButton || soundButton || restartButton) {
         cursor(HAND);
@@ -911,10 +990,12 @@ function draw() {
     switch (gameState) {
         case "game":
             gameScreen();
+            isDeathScreen = false;
             break;
         case "death":
             gameScreen();
             deathScreen();
+            isDeathScreen = true;
             break;
     }
 
